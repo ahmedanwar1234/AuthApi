@@ -13,7 +13,7 @@ namespace UserAccountAPI.DTOs
         public string PhoneNumber { get; set; }
         public DateTime AdmissionDate { get; set; }
         public bool HasAppointments { get; set; }
-        public string UserId { get; set; }
+        public int UserId { get; set; }
     }
 
 
@@ -26,7 +26,7 @@ namespace UserAccountAPI.DTOs
         [DataType(DataType.Date)]
         public DateTime? DateOfBirth { get; set; }
 
-        [RegularExpression("^(Male|Female|Other)$")]
+        [RegularExpression("^(Male|Female)$")]
         public string Gender { get; set; }
 
         [Phone(ErrorMessage = "Invalid phone number")]

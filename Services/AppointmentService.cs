@@ -55,7 +55,6 @@ namespace UserAccountAPI.Services
 
         public async Task<AppointmentDto> CreateAppointmentAsync(AppointmentCreateDto appointmentDto)
         {
-            // Validate appointment time availability
             var startTime = TimeSpan.Parse(appointmentDto.StartTime);
             var endTime = TimeSpan.Parse(appointmentDto.EndTime);
 
@@ -75,7 +74,6 @@ namespace UserAccountAPI.Services
                 throw new InvalidOperationException("The doctor is not available at the requested time.");
             }
 
-            // Create new appointment
             var appointment = new Appointment
             {
                 PatientId = appointmentDto.PatientId,
@@ -99,7 +97,6 @@ namespace UserAccountAPI.Services
                 return null;
             }
 
-            // Parse time values
             var startTime = TimeSpan.Parse(appointmentDto.StartTime);
             var endTime = TimeSpan.Parse(appointmentDto.EndTime);
 
@@ -108,7 +105,6 @@ namespace UserAccountAPI.Services
                 throw new InvalidOperationException("End time must be after start time.");
             }
 
-            // Check availability only if date or time changed
             if (appointment.AppointmentDate != appointmentDto.AppointmentDate ||
                 appointment.StartTime != startTime ||
                 appointment.EndTime != endTime)
@@ -118,7 +114,7 @@ namespace UserAccountAPI.Services
                     appointmentDto.AppointmentDate,
                     startTime,
                     endTime,
-                    id); // Exclude current appointment from check
+                    id);
 
                 if (!isAvailable)
                 {
@@ -126,7 +122,6 @@ namespace UserAccountAPI.Services
                 }
             }
 
-            // Update appointment properties
             appointment.AppointmentDate = appointmentDto.AppointmentDate;
             appointment.StartTime = startTime;
             appointment.EndTime = endTime;
@@ -149,7 +144,6 @@ namespace UserAccountAPI.Services
                 return null;
             }
 
-            // Parse the status string to enum
             if (!Enum.TryParse<AppointmentStatus>(statusDto.Status, true, out var newStatus))
             {
                 throw new InvalidOperationException($"Invalid status value: {statusDto.Status}");
@@ -189,7 +183,7 @@ namespace UserAccountAPI.Services
         }
 
         // Authorization check methods
-        public async Task<bool> IsAppointmentForUserAsync(int appointmentId, string userId)
+        public async Task<bool> IsAppointmentForUserAsync(int appointmentId, int userId)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
             if (appointment == null)
@@ -201,7 +195,7 @@ namespace UserAccountAPI.Services
             return patient != null && appointment.PatientId == patient.Id;
         }
 
-        public async Task<bool> IsAppointmentForDoctorAsync(int appointmentId, string userId)
+        public async Task<bool> IsAppointmentForDoctorAsync(int appointmentId, int userId)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
             if (appointment == null)
@@ -213,25 +207,25 @@ namespace UserAccountAPI.Services
             return doctor != null && appointment.DoctorId == doctor.Id;
         }
 
-        public async Task<bool> IsPatientUserAsync(int patientId, string userId)
+        public async Task<bool> IsPatientUserAsync(int patientId, int userId)
         {
             var patient = await _patientRepository.GetPatientById(patientId);
             return patient != null && patient.UserId == userId;
         }
 
-        public async Task<bool> IsDoctorUserAsync(int doctorId, string userId)
+        public async Task<bool> IsDoctorUserAsync(int doctorId, int userId)
         {
             var doctor = await _doctorRepository.GetDoctorById(doctorId);
             return doctor != null && doctor.UserId == userId;
         }
 
-        public async Task<int?> GetPatientIdFromUserIdAsync(string userId)
+        public async Task<int?> GetPatientIdFromUserIdAsync(int userId)
         {
             var patient = await _patientRepository.GetByUserIdAsync(userId);
             return patient?.Id;
         }
 
-        public async Task<int?> GetDoctorIdFromUserIdAsync(string userId)
+        public async Task<int?> GetDoctorIdFromUserIdAsync(int userId)
         {
             var doctor = await _doctorRepository.GetDoctorByUserId(userId);
             return doctor?.Id;

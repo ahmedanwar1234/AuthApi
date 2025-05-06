@@ -12,6 +12,7 @@ using UserAccountAPI.DTOs;
 using UserAccountAPI.Models;
 using UserAccountAPI.Services.Interfaces;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserAccountAPI.Services
 {
@@ -38,7 +39,7 @@ namespace UserAccountAPI.Services
 
             var claims = new List<Claim>
     {
-        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         new Claim(ClaimTypes.Name, user.UserName),
         new Claim(ClaimTypes.Email, user.Email),
         new Claim("firstName", user.FirstName ?? string.Empty),
@@ -93,6 +94,45 @@ namespace UserAccountAPI.Services
             userDto.AccessToken = accessToken;
             userDto.RefreshToken = refreshToken;
             userDto.ExpiresAt = tokenExpiry;
+            var patient = await _context.Patients
+       .Where(p => p.UserId == user.Id)
+       .FirstOrDefaultAsync();
+
+            PatientDTO patientDto = null;
+            if (patient != null)
+            {
+                patientDto = new PatientDTO
+                {
+                    Id = patient.Id,
+                    FullName = patient.FullName,
+                    DateOfBirth = patient.DateOfBirth,
+                    Gender = patient.Gender,
+                    PhoneNumber = patient.PhoneNumber,
+                    AdmissionDate = patient.AdmissionDate,
+                    HasAppointments = patient.HasAppointments,
+                    UserId = patient.UserId
+                };
+            }
+
+            // تحويل بيانات المستخدم إلى UserDTO
+                var userDTO = new UserDTO
+            {
+                Id = user.Id.ToString(),
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                CreatedAt = user.CreatedAt,
+                LastLogin = user.LastLogin,
+                EmailConfirmed = user.EmailConfirmed,
+                PhoneNumber = user.PhoneNumber,
+                NationalId = user.NationalId,
+                DateOfBirth = user.DateOfBirth?.ToString("yyyy-MM-dd"),
+                Role = roles?.FirstOrDefault() ?? string.Empty,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresAt = tokenExpiry,
+                Patient = patientDto // ✅ هنا بقى نربط بيانات المريض
+            };
 
             return new AuthResponseDTO
             {
@@ -110,8 +150,11 @@ namespace UserAccountAPI.Services
                 return null;
             }
 
-            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-
+            var userIdString = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+            {
+                return null; // أو رسالة خطأ مناسبة حسب الحاجة
+            }
             var storedRefreshToken = _context.RefreshTokens
                 .FirstOrDefault(rt => rt.Token == refreshToken && rt.UserId == userId);
 

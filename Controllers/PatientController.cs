@@ -7,6 +7,7 @@ using UserAccountAPI.Models;
 using UserAccountAPI.Repositories.Interfaces;
 using AutoMapper;
 using System.Linq;
+using System.Security.Claims;
 
 namespace UserAccountAPI.Controllers
 {
@@ -25,16 +26,16 @@ namespace UserAccountAPI.Controllers
 
         // GET: api/Patients
         [HttpGet]
-        [Authorize(Roles = "Admin,Doctor")]
+        [Authorize(Roles = "Admin,Doctor,Patient")]
         public async Task<ActionResult<IEnumerable<PatientDTO>>> GetPatients()
         {
             var patients = await _patientRepository.GetAllPatients();
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // GET: api/Patients/5
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,Doctor")]
+        [Authorize(Roles = "Admin,Doctor,Patient")]
         public async Task<ActionResult<PatientDTO>> GetPatient(int id)
         {
             var patient = await _patientRepository.GetPatientById(id);
@@ -47,14 +48,17 @@ namespace UserAccountAPI.Controllers
             // Allow patients to view their own profile
             if (User.IsInRole("Patient") && !User.IsInRole("Admin") && !User.IsInRole("Doctor"))
             {
-                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                {
+                    return Unauthorized("Invalid user ID.");
+                }
                 if (patient.UserId != userId)
                 {
                     return Forbid();
                 }
             }
 
-            return _mapper.Map<PatientDTO>(patient);
+            return Ok(_mapper.Map<PatientDTO>(patient));
         }
 
         // PUT: api/Patients/5
@@ -72,7 +76,10 @@ namespace UserAccountAPI.Controllers
             // Allow patients to update only their own profile
             if (User.IsInRole("Patient") && !User.IsInRole("Admin") && !User.IsInRole("Doctor"))
             {
-                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                {
+                    return Unauthorized("Invalid user ID.");
+                }
                 if (existingPatient.UserId != userId)
                 {
                     return Forbid();
@@ -92,7 +99,7 @@ namespace UserAccountAPI.Controllers
             if (patientDto.PhoneNumber != null)
                 existingPatient.PhoneNumber = patientDto.PhoneNumber;
 
-            var updatedPatient = await _patientRepository.UpdatePatient(existingPatient);
+            await _patientRepository.UpdatePatient(existingPatient);
 
             return NoContent();
         }
@@ -118,7 +125,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<IEnumerable<PatientDTO>>> GetPatientsByYear(int year)
         {
             var patients = await _patientRepository.GetPatientsAdmittedInYear(year);
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // GET: api/Patients/age-range?minAge=20&maxAge=40
@@ -127,7 +134,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<IEnumerable<PatientDTO>>> GetPatientsByAgeRange([FromQuery] int minAge, [FromQuery] int maxAge)
         {
             var patients = await _patientRepository.GetPatientsByAgeRange(minAge, maxAge);
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // GET: api/Patients/with-appointments
@@ -136,7 +143,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<IEnumerable<PatientDTO>>> GetPatientsWithAppointments()
         {
             var patients = await _patientRepository.GetPatientsWithAppointments();
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // GET: api/Patients/gender-count
@@ -145,7 +152,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<Dictionary<string, int>>> GetPatientCountByGender()
         {
             var counts = await _patientRepository.CountPatientsByGender();
-            return counts;
+            return Ok(counts);
         }
 
         // GET: api/Patients/search?term=John
@@ -154,7 +161,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<IEnumerable<PatientDTO>>> SearchPatients([FromQuery] string term)
         {
             var patients = await _patientRepository.SearchPatients(term);
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // PUT: api/Patients/5/phone
@@ -172,7 +179,10 @@ namespace UserAccountAPI.Controllers
             // Allow patients to update only their own phone number
             if (User.IsInRole("Patient") && !User.IsInRole("Admin") && !User.IsInRole("Doctor"))
             {
-                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                {
+                    return Unauthorized("Invalid user ID.");
+                }
                 if (existingPatient.UserId != userId)
                 {
                     return Forbid();
@@ -186,7 +196,7 @@ namespace UserAccountAPI.Controllers
                 return NotFound();
             }
 
-            return _mapper.Map<PatientDTO>(updatedPatient);
+            return Ok(_mapper.Map<PatientDTO>(updatedPatient));
         }
 
         // POST: api/Patients/filter
@@ -195,7 +205,7 @@ namespace UserAccountAPI.Controllers
         public async Task<ActionResult<IEnumerable<PatientDTO>>> FilterPatients([FromBody] PatientFilterDTO filter)
         {
             var patients = await _patientRepository.FilterPatients(filter);
-            return _mapper.Map<List<PatientDTO>>(patients);
+            return Ok(_mapper.Map<List<PatientDTO>>(patients));
         }
 
         // GET: api/Patients/profile
@@ -203,17 +213,19 @@ namespace UserAccountAPI.Controllers
         [Authorize(Roles = "Patient")]
         public async Task<ActionResult<PatientDTO>> GetPatientProfile()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
 
-            var patients = await _patientRepository.GetAllPatients();
-            var patientProfile = patients.FirstOrDefault(p => p.UserId == userId);
+            var patientProfile = await _patientRepository.GetByUserIdAsync(userId);
 
             if (patientProfile == null)
             {
                 return NotFound();
             }
 
-            return _mapper.Map<PatientDTO>(patientProfile);
+            return Ok(_mapper.Map<PatientDTO>(patientProfile));
         }
     }
 }

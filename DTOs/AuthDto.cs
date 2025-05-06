@@ -28,6 +28,10 @@ namespace UserAccountAPI.DTOs
 
         [DataType(DataType.Date)]
         public DateTime? DateOfBirth { get; set; }
+
+        [Required]
+        [RegularExpression("^(Male|Female)$", ErrorMessage = "Gender must be either 'Male' or 'Female'.")]
+        public string Gender { get; set; }
     }
 
     public class LoginDTO
@@ -41,29 +45,15 @@ namespace UserAccountAPI.DTOs
 
         public bool RememberMe { get; set; }
     }
-
+    public class LogoutDTO
+    {
+        public string AccessToken { get; set; }
+    }
     public class ForgotPasswordDTO
     {
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-    }
-
-    public class ResetPasswordDTO
-    {
-        [Required]
-        public string Token { get; set; }
-
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; }
-
-        [Required]
-        [MinLength(8)]
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$",
-            ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")]
-        public string Password { get; set; }
-
     }
 
     public class ChangePasswordDTO
@@ -82,10 +72,18 @@ namespace UserAccountAPI.DTOs
     public class EmailConfirmationDTO
     {
         [Required]
-        public string UserId { get; set; }
+        [EmailAddress]
+        public string Email { get; set; }
 
         [Required]
-        public string Token { get; set; }
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "The code must be a 6-digit number.")]
+        public string Code { get; set; }
+    }
+    public class ResendConfirmationCodeDTO
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
     }
 
     public class RefreshTokenDTO

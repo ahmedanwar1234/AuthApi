@@ -21,15 +21,15 @@ namespace UserAccountAPI.Models
         [StringLength(20)]
         public string PhoneNumber { get; set; }
 
-        public bool IsAvailableToday { get; set; }
+        public bool IsAvailableToday { get; set; } = false;
 
         public int? DepartmentId { get; set; }
 
         [ForeignKey("DepartmentId")]
         public virtual Department Department { get; set; }
 
-        // Add FK to ApplicationUser
-        public string UserId { get; set; }
+        // Make UserId nullable to allow SQL insertion without a linked user
+        public int? UserId { get; set; }
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser ApplicationUser { get; set; }

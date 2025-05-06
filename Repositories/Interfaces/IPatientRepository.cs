@@ -10,7 +10,7 @@ namespace UserAccountAPI.Repositories.Interfaces
     {
         Task<IEnumerable<Patient>> GetAllPatients();
         Task<Patient> GetPatientById(int id);
-        Task<Patient> GetByUserIdAsync(string userId);  // Added this method
+        Task<Patient> GetByUserIdAsync(int userId);  // Added this method
         Task<Patient> AddPatient(Patient patient);
         Task<Patient> UpdatePatient(Patient patient);
         Task<bool> DeletePatient(int id);

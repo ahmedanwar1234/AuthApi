@@ -7,9 +7,9 @@ namespace UserAccountAPI.Repositories.Interfaces
 {
     public interface IUserRepository
     {
-        Task<UserDTO> GetUserByIdAsync(string userId);
-        Task<UserDTO> UpdateUserAsync(string userId, UpdateUserDTO model);
-        Task<bool> DeleteUserAsync(string userId);
+        Task<UserDTO> GetUserByIdAsync(int userId);
+        Task<UserDTO> UpdateUserAsync(int userId, UpdateUserDTO model);
+        Task<bool> DeleteUserAsync(int userId);
         Task<List<UserDTO>> GetAllUsersAsync(int page = 1, int pageSize = 10);
     }
 }

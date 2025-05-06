@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
-using UserAccountAPI.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace UserAccountAPI.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, int>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -18,11 +18,18 @@ namespace UserAccountAPI.Data
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
-        public object WorkingHours { get; internal set; }
+        public DbSet<WorkingHours> WorkingHours { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+
+            builder.Entity<ApplicationUser>()
+             .HasOne(u => u.Patient)
+             .WithOne(p => p.ApplicationUser)
+             .HasForeignKey<Patient>(p => p.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<RefreshToken>(entity =>
             {
@@ -82,7 +89,7 @@ namespace UserAccountAPI.Data
     {
         public int Id { get; set; }
         public string Token { get; set; }
-        public string UserId { get; set; }
+        public int UserId { get; set; }
         public DateTime ExpiryDate { get; set; }
         public bool IsUsed { get; set; }
         public bool IsRevoked { get; set; }

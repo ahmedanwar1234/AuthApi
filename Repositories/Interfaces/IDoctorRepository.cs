@@ -9,7 +9,7 @@ namespace UserAccountAPI.Repositories
     {
         Task<IEnumerable<Doctor>> GetAllDoctors();
         Task<Doctor> GetDoctorById(int id);
-        Task<Doctor> GetDoctorByUserId(string userId);  
+        Task<Doctor> GetDoctorByUserId(int? userId);
         Task<Doctor> AddDoctor(Doctor doctor);
         Task<Doctor> UpdateDoctor(Doctor doctor);
         Task<bool> DeleteDoctor(int id);
@@ -19,5 +19,6 @@ namespace UserAccountAPI.Repositories
         Task<Doctor> UpdateWorkingHours(int doctorId, List<WorkingHours> workingHours);
         Task<Doctor> AssignDepartment(int doctorId, int departmentId);
         Task<IEnumerable<Doctor>> FilterDoctors(string specialty, bool? available);
+        Task<Doctor> LinkDoctorToUser(int doctorId, int userId);
     }
 }

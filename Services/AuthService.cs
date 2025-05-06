@@ -9,6 +9,8 @@ using UserAccountAPI.DTOs;
 using UserAccountAPI.Models;
 using UserAccountAPI.Services.Interfaces;
 using UserAccountAPI.Common;
+using UserAccountAPI.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserAccountAPI.Services
 {
@@ -21,6 +23,7 @@ namespace UserAccountAPI.Services
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly ApplicationDbContext _context;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
@@ -29,7 +32,8 @@ namespace UserAccountAPI.Services
             ITokenService tokenService,
             IEmailService emailService,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -38,6 +42,7 @@ namespace UserAccountAPI.Services
             _emailService = emailService;
             _configuration = configuration;
             _mapper = mapper;
+            _context = context;
         }
 
         public async Task<(IdentityResult Result, ApplicationUser User)> RegisterUserAsync(RegisterDTO model)
@@ -50,7 +55,8 @@ namespace UserAccountAPI.Services
                 LastName = model.LastName,
                 PhoneNumber = model.PhoneNumber,
                 NationalId = model.NationalId,
-                DateOfBirth = model.DateOfBirth
+                DateOfBirth = model.DateOfBirth,
+                Gender = model.Gender
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -63,20 +69,26 @@ namespace UserAccountAPI.Services
                     await _roleManager.CreateAsync(new ApplicationRole { Name = UserRoles.Patient });
                 }
 
-                // Now assign the role
+                // Assign the Patient role
                 await _userManager.AddToRoleAsync(user, UserRoles.Patient);
 
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var encodedToken = HttpUtility.UrlEncode(token);
-                var clientUrl = _configuration["ClientUrl"];
-                var confirmationLink = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+                // Create corresponding Patient record
+                var patient = new Patient
+                {
+                    FullName = $"{model.FirstName} {model.LastName}",
+                    DateOfBirth = model.DateOfBirth ?? DateTime.UtcNow,
+                    Gender = model.Gender,
+                    PhoneNumber = model.PhoneNumber,
+                    AdmissionDate = DateTime.UtcNow,
+                    HasAppointments = false,
+                    UserId = user.Id
+                };
 
-                await _emailService.SendEmailConfirmationAsync(
-                    user.Email,
-                    confirmationLink,
-                    user.Id,
-                    token
-                );
+                _context.Patients.Add(patient);
+                await _context.SaveChangesAsync();
+
+                // Send email confirmation with 6-digit code
+                await GenerateAndSendEmailConfirmationCodeAsync(user);
             }
 
             return (result, user);
@@ -84,7 +96,9 @@ namespace UserAccountAPI.Services
 
         public async Task<(SignInResult Result, ApplicationUser User, IList<string> Roles)> LoginUserAsync(LoginDTO model)
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            var user = await _context.Users
+                .Include(u => u.Patient) // Include Patient data
+                .FirstOrDefaultAsync(u => u.Email == model.Email);
 
             if (user == null)
             {
@@ -117,7 +131,34 @@ namespace UserAccountAPI.Services
             return (result, user, null);
         }
 
-        public async Task LogoutAsync()
+        public async Task<AuthResponseDTO> GenerateTokenAsync(ApplicationUser user)
+        {
+            // Fetch user with Patient data
+            user = await _context.Users
+                .Include(u => u.Patient)
+                .FirstOrDefaultAsync(u => u.Id == user.Id);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var tokenResponse = await _tokenService.GenerateTokensAsync(user, roles);
+
+            // Map user to DTO and include Patient data
+            var userDto = _mapper.Map<UserDTO>(user);
+            userDto.Role = roles.FirstOrDefault();
+            userDto.AccessToken = tokenResponse.AccessToken;
+            userDto.RefreshToken = tokenResponse.RefreshToken;
+            userDto.ExpiresAt = tokenResponse.ExpiresAt;
+
+            return new AuthResponseDTO { User = userDto };
+        }
+
+        public async Task<ApplicationUser> GetUserByIdAsync(int id)
+        {
+            return await _context.Users
+                .Include(u => u.Patient) // Include Patient data
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task LogoutAsync(string accessToken)
         {
             await _signInManager.SignOutAsync();
         }
@@ -139,21 +180,9 @@ namespace UserAccountAPI.Services
             return true;
         }
 
-        public async Task<IdentityResult> ResetPasswordAsync(ResetPasswordDTO model)
+        public async Task<IdentityResult> ChangePasswordAsync(int userId, ChangePasswordDTO model)
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-
-            if (user == null)
-            {
-                return IdentityResult.Failed(new IdentityError { Description = "Password reset failed" });
-            }
-
-            return await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
-        }
-
-        public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordDTO model)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return IdentityResult.Failed(new IdentityError { Description = "User not found" });
@@ -162,23 +191,37 @@ namespace UserAccountAPI.Services
             return await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
         }
 
-        public async Task<bool> ConfirmEmailAsync(EmailConfirmationDTO model)
+        public async Task GenerateAndSendEmailConfirmationCodeAsync(ApplicationUser user)
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
-            if (user == null)
-            {
-                return false;
-            }
+            // Generate 6-digit code
+            var code = new Random().Next(100000, 999999).ToString();
+            var expiration = DateTime.UtcNow.AddMinutes(30); // Code expires in 30 minutes
 
-            var result = await _userManager.ConfirmEmailAsync(user, model.Token);
-            return result.Succeeded;
+            // Store code and expiration
+            user.EmailConfirmationCode = code;
+            user.EmailConfirmationCodeExpiration = expiration;
+            await _userManager.UpdateAsync(user);
+
+            // Send email with code
+            await _emailService.SendEmailConfirmationAsync(user.Email, code);
         }
 
-        public async Task<AuthResponseDTO> GenerateTokenAsync(ApplicationUser user)
+        public async Task<bool> ConfirmEmailAsync(EmailConfirmationDTO model)
         {
-            // Get user roles to include in token
-            var roles = await _userManager.GetRolesAsync(user);
-            return await _tokenService.GenerateTokensAsync(user, roles);
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+                return false;
+
+            if (user.EmailConfirmationCode != model.Code || user.EmailConfirmationCodeExpiration < DateTime.UtcNow)
+                return false;
+
+            // Mark email as confirmed
+            user.EmailConfirmed = true;
+            user.EmailConfirmationCode = null; // Clear the code
+            user.EmailConfirmationCodeExpiration = null;
+            var result = await _userManager.UpdateAsync(user);
+
+            return result.Succeeded;
         }
 
         public async Task<AuthResponseDTO> RefreshTokenAsync(RefreshTokenDTO model)
@@ -186,15 +229,15 @@ namespace UserAccountAPI.Services
             return await _tokenService.RefreshTokenAsync(model.AccessToken, model.RefreshToken);
         }
 
-        public async Task<bool> IsEmailConfirmedAsync(string userId)
+        public async Task<bool> IsEmailConfirmedAsync(int userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return false;
             }
 
-            return await _userManager.IsEmailConfirmedAsync(user);
+             return await _userManager.IsEmailConfirmedAsync(user);
         }
 
         public async Task<ApplicationUser> GetUserByEmailAsync(string email)
@@ -202,14 +245,9 @@ namespace UserAccountAPI.Services
             return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<ApplicationUser> GetUserByIdAsync(string id)
+        public async Task<IList<string>> GetUserRolesAsync(int userId)
         {
-            return await _userManager.FindByIdAsync(id);
-        }
-
-        public async Task<IList<string>> GetUserRolesAsync(string userId)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return new List<string>();
@@ -218,15 +256,14 @@ namespace UserAccountAPI.Services
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<bool> AddUserToRoleAsync(string userId, string role)
+        public async Task<bool> AddUserToRoleAsync(int userId, string role)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return false;
             }
 
-            // Check if role exists
             if (!await _roleManager.RoleExistsAsync(role))
             {
                 await _roleManager.CreateAsync(new ApplicationRole { Name = role });
@@ -236,9 +273,9 @@ namespace UserAccountAPI.Services
             return result.Succeeded;
         }
 
-        public async Task<bool> RemoveUserFromRoleAsync(string userId, string role)
+        public async Task<bool> RemoveUserFromRoleAsync(int userId, string role)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return false;

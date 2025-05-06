@@ -48,8 +48,8 @@ namespace UserAccountAPI.Controllers
         [HttpGet("profile")]
         public async Task<IActionResult> GetUserProfile()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
@@ -61,17 +61,17 @@ namespace UserAccountAPI.Controllers
             }
 
             return Ok(user);
+
         }
 
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateUserDTO model)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
-
             // Update user in ApplicationUser table
             var updatedUser = await _userRepository.UpdateUserAsync(userId, model);
             if (updatedUser == null)
@@ -113,8 +113,8 @@ namespace UserAccountAPI.Controllers
         [HttpDelete("profile")]
         public async Task<IActionResult> DeleteUserProfile()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
@@ -131,8 +131,8 @@ namespace UserAccountAPI.Controllers
         [HttpGet("email-verified")]
         public async Task<IActionResult> IsEmailVerified()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
@@ -142,12 +142,13 @@ namespace UserAccountAPI.Controllers
         }
 
         [HttpPost("resend-confirmation")]
+        [Authorize]
         public async Task<IActionResult> ResendConfirmationEmail()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "Invalid or missing user ID." });
             }
 
             var user = await _authService.GetUserByIdAsync(userId);
@@ -161,20 +162,9 @@ namespace UserAccountAPI.Controllers
                 return BadRequest(new { message = "Email already confirmed." });
             }
 
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            await _authService.GenerateAndSendEmailConfirmationCodeAsync(user);
 
-            var encodedToken = HttpUtility.UrlEncode(token);
-            var clientUrl = _configuration["ClientUrl"];
-            var confirmationLink = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
-
-            await _emailService.SendEmailConfirmationAsync(
-                user.Email,
-                confirmationLink,
-                user.Id,
-                token
-            );
-
-            return Ok(new { message = "Confirmation email sent successfully." });
+            return Ok(new { message = "Confirmation code sent successfully to your email." });
         }
     }
 }

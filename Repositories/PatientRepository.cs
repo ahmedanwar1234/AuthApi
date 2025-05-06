@@ -33,7 +33,7 @@ namespace UserAccountAPI.Repositories
             return await _context.Patients.FindAsync(id);
         }
 
-        public async Task<Patient> GetByUserIdAsync(string userId)
+        public async Task<Patient> GetByUserIdAsync(int userId)
         {
             return await _context.Patients
                 .FirstOrDefaultAsync(p => p.UserId == userId);

@@ -7,6 +7,6 @@
         public string? Description { get; set; }
 
         // علاقة One-to-Many مع الأطباء
-        public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();
+        public ICollection<Doctor>? Doctors { get; set; } = new List<Doctor>();
     }
 }

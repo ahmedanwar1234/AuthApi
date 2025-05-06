@@ -29,15 +29,15 @@ namespace UserAccountAPI.Repositories
             _mapper = mapper;
         }
 
-        public async Task<UserDTO> GetUserByIdAsync(string userId)
+        public async Task<UserDTO> GetUserByIdAsync(int userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             return _mapper.Map<UserDTO>(user);
         }
 
-        public async Task<UserDTO> UpdateUserAsync(string userId, UpdateUserDTO model)
+        public async Task<UserDTO> UpdateUserAsync(int userId, UpdateUserDTO model)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return null;
@@ -50,9 +50,9 @@ namespace UserAccountAPI.Repositories
             return _mapper.Map<UserDTO>(user);
         }
 
-        public async Task<bool> DeleteUserAsync(string userId)
+        public async Task<bool> DeleteUserAsync(int userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return false;

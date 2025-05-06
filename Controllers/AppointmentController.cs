@@ -50,18 +50,25 @@ namespace UserAccountAPI.Controllers
             // Check if the user has access to this appointment
             if (User.IsInRole("Patient"))
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                // Assuming there's a way to check if the appointment belongs to this patient
-                // This would require a patient repository or service to get the patient's ID from their user ID
-                // If it doesn't match, return Forbid
-                // For simplicity, we're assuming _appointmentService has a method for this check
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
+                // Check if the appointment belongs to this patient
                 if (!await _appointmentService.IsAppointmentForUserAsync(id, userId))
                     return Forbid();
             }
             else if (User.IsInRole("Doctor"))
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                // Similar check for doctors
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
+                // Check if the appointment belongs to this doctor
                 if (!await _appointmentService.IsAppointmentForDoctorAsync(id, userId))
                     return Forbid();
             }
@@ -86,7 +93,12 @@ namespace UserAccountAPI.Controllers
                 // Check if the doctor has access to this appointment
                 if (User.IsInRole("Doctor"))
                 {
-                    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                    {
+                        return Unauthorized(new { message = "User ID is missing or invalid." });
+                    }
+
                     if (!await _appointmentService.IsAppointmentForDoctorAsync(id, userId))
                         return Forbid();
                 }
@@ -131,9 +143,13 @@ namespace UserAccountAPI.Controllers
                 // If user is a patient, make sure they're only creating appointments for themselves
                 if (User.IsInRole("Patient"))
                 {
-                    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    // Assuming we have a way to get the patient's ID from their user ID
-                    // If it doesn't match the appointmentDto.PatientId, return Forbid
+                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                    {
+                        return Unauthorized(new { message = "User ID is missing or invalid." });
+                    }
+
+                    // Check if the patient ID in appointmentDto matches the user
                     if (!await _appointmentService.IsPatientUserAsync(appointmentDto.PatientId, userId))
                         return Forbid();
                 }
@@ -156,7 +172,12 @@ namespace UserAccountAPI.Controllers
             // If user is a patient, make sure they're only viewing their own appointments
             if (User.IsInRole("Patient"))
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
                 if (!await _appointmentService.IsPatientUserAsync(patientId, userId))
                     return Forbid();
             }
@@ -174,7 +195,12 @@ namespace UserAccountAPI.Controllers
             // If user is a doctor, make sure they're only viewing their own appointments
             if (User.IsInRole("Doctor"))
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
                 if (!await _appointmentService.IsDoctorUserAsync(doctorId, userId))
                     return Forbid();
             }
@@ -199,7 +225,12 @@ namespace UserAccountAPI.Controllers
                 // If user is a doctor, make sure they're only updating their own appointments
                 if (User.IsInRole("Doctor"))
                 {
-                    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                    {
+                        return Unauthorized(new { message = "User ID is missing or invalid." });
+                    }
+
                     if (!await _appointmentService.IsAppointmentForDoctorAsync(appointmentId, userId))
                         return Forbid();
                 }
@@ -256,7 +287,12 @@ namespace UserAccountAPI.Controllers
             // If user is a doctor, restrict to their own appointments
             if (User.IsInRole("Doctor") && doctorId.HasValue)
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
                 if (!await _appointmentService.IsDoctorUserAsync(doctorId.Value, userId))
                     return Forbid();
             }
@@ -264,7 +300,12 @@ namespace UserAccountAPI.Controllers
             // If user is a patient, restrict to their own appointments
             if (User.IsInRole("Patient") && patientId.HasValue)
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "User ID is missing or invalid." });
+                }
+
                 if (!await _appointmentService.IsPatientUserAsync(patientId.Value, userId))
                     return Forbid();
             }
@@ -277,14 +318,18 @@ namespace UserAccountAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetMyAppointments()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "User ID is missing or invalid." });
+            }
 
             if (User.IsInRole("Patient"))
             {
                 // Get appointments for this patient
                 var patientId = await _appointmentService.GetPatientIdFromUserIdAsync(userId);
                 if (patientId == null)
-                    return NotFound("Patient profile not found");
+                    return NotFound(new { message = "Patient profile not found" });
 
                 var appointments = await _appointmentService.GetAppointmentsByPatientAsync(patientId.Value);
                 return Ok(appointments);
@@ -294,7 +339,7 @@ namespace UserAccountAPI.Controllers
                 // Get appointments for this doctor
                 var doctorId = await _appointmentService.GetDoctorIdFromUserIdAsync(userId);
                 if (doctorId == null)
-                    return NotFound("Doctor profile not found");
+                    return NotFound(new { message = "Doctor profile not found" });
 
                 var appointments = await _appointmentService.GetAppointmentsByDoctorAsync(doctorId.Value);
                 return Ok(appointments);

@@ -17,7 +17,7 @@ namespace UserAccountAPI.Models
         public bool HasAppointments { get; set; }
 
         // Relationship with User
-        public string UserId { get; set; }
+        public int UserId { get; set; }
         public ApplicationUser ApplicationUser { get; set; }
 
         // Relationship with Doctor

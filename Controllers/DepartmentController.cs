@@ -1,14 +1,15 @@
 ﻿using UserAccountAPI.Models;
-using UserAccountAPI.Repositories;
+using UserAccountAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UserAccountAPI.Repositories.Interfaces;
+using System.Threading.Tasks;
+using UserAccountAPI.Repositories;
 
 namespace UserAccountAPI.Controllers
 {
-    [Route("api/[controller]")]  // Changed from api/v2/[controller] for consistency
+    [Route("api/[controller]")]
     [ApiController]
-    [Authorize]  // Added basic authorization
+    [Authorize]
     public class DepartmentController : ControllerBase
     {
         private readonly IDeptRepository _repo;
@@ -20,13 +21,19 @@ namespace UserAccountAPI.Controllers
             _doctorRepository = doctorRepository;
         }
 
-        [HttpGet]  // Changed from AllDepartments for REST convention
+        /// <summary>
+        /// Get all departments from the database
+        /// </summary>
+        [HttpGet]
         public async Task<IActionResult> GetAllDepartments()
         {
             var departments = await _repo.GetAllDepartments();
             return Ok(departments);
         }
 
+        /// <summary>
+        /// Get a specific department by ID
+        /// </summary>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetDepartment(int id)
         {
@@ -34,42 +41,77 @@ namespace UserAccountAPI.Controllers
             return department == null ? NotFound("Department not found") : Ok(department);
         }
 
+        /// <summary>
+        /// Update a department record
+        /// </summary>
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Admin")]  // Only admins can update departments
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateDepartment(int id, [FromBody] Department department)
         {
-            var updatedDept = await _repo.UpdateDepartment(id, department);
-            return updatedDept == null ? NotFound() : Ok(updatedDept);
+            try
+            {
+                var updatedDept = await _repo.UpdateDepartment(id, department);
+                return updatedDept == null ? NotFound("Department not found") : Ok(updatedDept);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
+        /// <summary>
+        /// Delete a department - restricted to avoid data inconsistency
+        /// </summary>
         [HttpDelete("{id:int}")]
-        [Authorize(Roles = "Admin")]  // Only admins can delete departments
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteDepartment(int id)
         {
-            var result = await _repo.DeleteDepartment(id);
-            return result ? NoContent() : NotFound();
+            try
+            {
+                var result = await _repo.DeleteDepartment(id);
+                return result ? NoContent() : NotFound("Department not found");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPost]  // Changed from AddDepartment for REST convention
-        [Authorize(Roles = "Admin")]  // Only admins can add departments
+        /// <summary>
+        /// Add a department through the API - mainly for completeness
+        /// Note: Primary department management happens in SQL Server Management Studio
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddDepartment([FromBody] Department department)
         {
-            var newDept = await _repo.AddDepartment(department);
-            return CreatedAtAction(nameof(GetDepartment), new { id = newDept.Id }, newDept);
+            try
+            {
+                var newDept = await _repo.AddDepartment(department);
+                return CreatedAtAction(nameof(GetDepartment), new { id = newDept.Id }, newDept);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpGet("filter")]  // Changed from Filtering for consistency
+        /// <summary>
+        /// Filter departments by name
+        /// </summary>
+        [HttpGet("filter")]
         public async Task<IActionResult> FilterDepartments([FromQuery] string? name)
         {
             var filtered = await _repo.FilterDepartments(name);
             return Ok(filtered);
         }
 
-        // Added new endpoint to get doctors by department
+        /// <summary>
+        /// Get all doctors in a specific department
+        /// </summary>
         [HttpGet("{id:int}/doctors")]
         public async Task<IActionResult> GetDoctorsByDepartment(int id)
         {
-            // First check if department exists
             var department = await _repo.GetDepartmentById(id);
             if (department == null)
                 return NotFound("Department not found");

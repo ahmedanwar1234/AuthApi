@@ -39,8 +39,6 @@ namespace UserAccountAPI.Mappings
                 .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime.ToString(@"hh\:mm")))
                 .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime.ToString(@"hh\:mm")));
 
-            // Registration DTOs
-            CreateMap<DoctorRegisterDTO, RegisterDTO>();
 
             // Appointment mappings
             CreateMap<AppointmentCreateDto, Appointment>();

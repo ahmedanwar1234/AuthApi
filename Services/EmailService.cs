@@ -1,4 +1,5 @@
-﻿using MailKit.Net.Smtp;
+﻿// Services/EmailService.cs
+using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
@@ -42,7 +43,8 @@ namespace UserAccountAPI.Services
             await client.SendAsync(emailMessage);
             await client.DisconnectAsync(true);
         }
-        public async Task SendPasswordResetEmailAsync(string email, string callbackUrl, string userId, string rawToken)
+
+        public async Task SendPasswordResetEmailAsync(string email, string callbackUrl, int userId, string rawToken)
         {
             var subject = "Reset Your Password";
             var message = $@"
@@ -57,22 +59,16 @@ namespace UserAccountAPI.Services
             await SendEmailAsync(email, subject, message);
         }
 
-        public async Task SendEmailConfirmationAsync(string email, string callbackUrl, string userId, string rawToken)
+        public async Task SendEmailConfirmationAsync(string email, string code)
         {
             var subject = "Confirm Your Email";
             var message = $@"
-                    <h1>Thanks for signing up!</h1>
-                    <p>Please confirm your email address by clicking the link below:</p>
-                    <p><a href='{callbackUrl}'>Confirm Email</a></p>
-                    <p>If you're testing locally, use these values:</p>
-                    <p>UserID: {userId}</p>
-                    <p>Raw Token: {rawToken}</p>
-                    <p>If you did not create an account, please ignore this email.</p>";
+                <h1>Thanks for signing up!</h1>
+                <p>Please confirm your email address by entering the following 6-digit code in the confirmation page:</p>
+                <p><strong>{code}</strong></p>
+                <p>This code will expire in 30 minutes.</p>
+                <p>If you did not create an account, please ignore this email.</p>";
             await SendEmailAsync(email, subject, message);
         }
     }
 }
-
-
-
-        

@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\DocAiApi\\Auth\\AuthAPI\\UserAccountAPI.csproj": {}
+    "E:\\graduation project\\New folder\\Auth (3)\\Auth\\AuthAPI\\UserAccountAPI.csproj": {}
   },
   "projects": {
-    "C:\\DocAiApi\\Auth\\AuthAPI\\UserAccountAPI.csproj": {
+    "E:\\graduation project\\New folder\\Auth (3)\\Auth\\AuthAPI\\UserAccountAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\DocAiApi\\Auth\\AuthAPI\\UserAccountAPI.csproj",
+        "projectUniqueName": "E:\\graduation project\\New folder\\Auth (3)\\Auth\\AuthAPI\\UserAccountAPI.csproj",
         "projectName": "UserAccountAPI",
-        "projectPath": "C:\\DocAiApi\\Auth\\AuthAPI\\UserAccountAPI.csproj",
-        "packagesPath": "C:\\Users\\Ahmed\\.nuget\\packages\\",
-        "outputPath": "C:\\DocAiApi\\Auth\\AuthAPI\\obj\\",
+        "projectPath": "E:\\graduation project\\New folder\\Auth (3)\\Auth\\AuthAPI\\UserAccountAPI.csproj",
+        "packagesPath": "C:\\Users\\Philo\\.nuget\\packages\\",
+        "outputPath": "E:\\graduation project\\New folder\\Auth (3)\\Auth\\AuthAPI\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\Ahmed\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\Philo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -116,7 +112,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.303/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
