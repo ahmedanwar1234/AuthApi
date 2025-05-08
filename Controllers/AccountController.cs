@@ -79,36 +79,37 @@ namespace UserAccountAPI.Controllers
                 return NotFound(new { message = "User not found." });
             }
 
-            // Check if user is a doctor and update corresponding record
+            // Update doctor name if user is a doctor
             if (_doctorRepository != null && User.IsInRole("Doctor"))
             {
-                var doctors = await _doctorRepository.GetAllDoctors();
-                var doctor = doctors.FirstOrDefault(d => d.UserId == userId);
+                var doctor = (await _doctorRepository.GetAllDoctors())
+                                .FirstOrDefault(d => d.UserId == userId);
 
                 if (doctor != null)
                 {
-                    // Update relevant doctor fields that should be synchronized with user profile
-                    doctor.Name = $"{model.FirstName} {model.LastName}";
+                    doctor.Name = $"{updatedUser.FirstName} {updatedUser.LastName}";
                     await _doctorRepository.UpdateDoctor(doctor);
                 }
             }
 
-            // Check if user is a patient and update corresponding record
+            // Update patient name if user is a patient
             if (_patientRepository != null && User.IsInRole("Patient"))
             {
-                var patients = await _patientRepository.GetAllPatients();
-                var patient = patients.FirstOrDefault(p => p.UserId == userId);
+                var patient = (await _patientRepository.GetAllPatients())
+                                .FirstOrDefault(p => p.UserId == userId);
 
                 if (patient != null)
                 {
-                    // Update relevant patient fields that should be synchronized with user profile
-                    patient.FullName = $"{model.FirstName} {model.LastName}";
+                    patient.FullName = $"{updatedUser.FirstName} {updatedUser.LastName}";
                     await _patientRepository.UpdatePatient(patient);
                 }
             }
 
             return Ok(updatedUser);
         }
+
+
+          
 
         [HttpDelete("profile")]
         public async Task<IActionResult> DeleteUserProfile()

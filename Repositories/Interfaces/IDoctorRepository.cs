@@ -13,6 +13,7 @@ namespace UserAccountAPI.Repositories
         Task<Doctor> AddDoctor(Doctor doctor);
         Task<Doctor> UpdateDoctor(Doctor doctor);
         Task<bool> DeleteDoctor(int id);
+        Task<IEnumerable<Doctor>> SearchDoctors(string query);
         Task<IEnumerable<Doctor>> GetDoctorsByDepartment(int departmentId);
         Task<IEnumerable<Doctor>> GetDoctorsBySpecialty(string specialty);
         Task<IEnumerable<Doctor>> GetAvailableDoctorsToday();

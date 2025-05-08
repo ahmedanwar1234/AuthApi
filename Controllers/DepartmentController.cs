@@ -9,7 +9,10 @@ namespace UserAccountAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+<<<<<<< HEAD
     [Authorize]
+=======
+>>>>>>> 64ea2d4 (2)
     public class DepartmentController : ControllerBase
     {
         private readonly IDeptRepository _repo;
@@ -45,7 +48,10 @@ namespace UserAccountAPI.Controllers
         /// Update a department record
         /// </summary>
         [HttpPut("{id:int}")]
+<<<<<<< HEAD
         [Authorize(Roles = "Admin")]
+=======
+>>>>>>> 64ea2d4 (2)
         public async Task<IActionResult> UpdateDepartment(int id, [FromBody] Department department)
         {
             try
@@ -63,7 +69,10 @@ namespace UserAccountAPI.Controllers
         /// Delete a department - restricted to avoid data inconsistency
         /// </summary>
         [HttpDelete("{id:int}")]
+<<<<<<< HEAD
         [Authorize(Roles = "Admin")]
+=======
+>>>>>>> 64ea2d4 (2)
         public async Task<IActionResult> DeleteDepartment(int id)
         {
             try
@@ -82,7 +91,10 @@ namespace UserAccountAPI.Controllers
         /// Note: Primary department management happens in SQL Server Management Studio
         /// </summary>
         [HttpPost]
+<<<<<<< HEAD
         [Authorize(Roles = "Admin")]
+=======
+>>>>>>> 64ea2d4 (2)
         public async Task<IActionResult> AddDepartment([FromBody] Department department)
         {
             try

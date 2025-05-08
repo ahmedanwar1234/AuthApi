@@ -37,19 +37,31 @@ namespace UserAccountAPI.Repositories
 
         public async Task<UserDTO> UpdateUserAsync(int userId, UpdateUserDTO model)
         {
+<<<<<<< HEAD
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
+=======
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return null;
+
+            user.PhoneNumber = model.PhoneNumber;
+            user.Email = model.Email;
+            user.UserName = model.Email; // Optional: لو حابب تخلي الـ UserName زي الإيميل
+
+            await _context.SaveChangesAsync();
+            return new UserDTO
+>>>>>>> 64ea2d4 (2)
             {
-                return null;
-            }
-
-            user.FirstName = model.FirstName ?? user.FirstName;
-            user.LastName = model.LastName ?? user.LastName;
-
-            await _userManager.UpdateAsync(user);
-            return _mapper.Map<UserDTO>(user);
+                Id = user.Id.ToString(),
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber
+            };
         }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 64ea2d4 (2)
         public async Task<bool> DeleteUserAsync(int userId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());

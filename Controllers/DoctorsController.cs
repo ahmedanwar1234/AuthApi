@@ -80,10 +80,29 @@ namespace MedicalAPI_1.Controllers
             var doctors = await _doctorRepository.GetAvailableDoctorsToday();
             return _mapper.Map<List<DoctorDto>>(doctors);
         }
+        // GET: api/Doctors/search?query=Cardiology
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<DoctorDto>>> SearchDoctors([FromQuery] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return BadRequest("Search query cannot be empty.");
+            }
+
+            try
+            {
+                var doctors = await _doctorRepository.SearchDoctors(query);
+                return _mapper.Map<List<DoctorDto>>(doctors);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (use a logging framework like Serilog or NLog)
+                return StatusCode(500, "An error occurred while searching for doctors.");
+            }
+        }
 
         // PUT: api/Doctors/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Doctor")]
         public async Task<ActionResult<DoctorDto>> PutDoctor(int id, DoctorUpdateDto doctorDto)
         {
             // Get the existing doctor first
@@ -130,7 +149,6 @@ namespace MedicalAPI_1.Controllers
 
         // POST: api/Doctors
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<DoctorDto>> PostDoctor(DoctorCreateDto doctorDto)
         {
             // Check if a doctor with this UserId already exists
@@ -165,7 +183,6 @@ namespace MedicalAPI_1.Controllers
 
         // DELETE: api/Doctors/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteDoctor(int id)
         {
             var result = await _doctorRepository.DeleteDoctor(id);
@@ -180,7 +197,6 @@ namespace MedicalAPI_1.Controllers
 
         // PUT: api/Doctors/5/department/2
         [HttpPut("{id}/department/{departmentId}")]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<DoctorDto>> AssignDepartment(int id, int departmentId)
         {
             var doctor = await _doctorRepository.AssignDepartment(id, departmentId);
@@ -195,7 +211,6 @@ namespace MedicalAPI_1.Controllers
 
         // PUT: api/Doctors/5/working-hours
         [HttpPut("{id}/working-hours")]
-        [Authorize(Roles = "Admin,Doctor")]
         public async Task<ActionResult<DoctorDto>> UpdateWorkingHours(int id, List<WorkingHoursDto> workingHoursDto)
         {
             // Check if the user is a doctor updating their own working hours
@@ -248,7 +263,6 @@ namespace MedicalAPI_1.Controllers
 
         // GET: api/Doctors/profile
         [HttpGet("profile")]
-        [Authorize(Roles = "Doctor")]
         public async Task<ActionResult<DoctorDto>> GetDoctorProfile()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -268,7 +282,10 @@ namespace MedicalAPI_1.Controllers
 
         // POST: api/Doctors/5/link-user/1
         [HttpPost("{doctorId}/link-user/{userId}")]
+<<<<<<< HEAD
         [Authorize(Roles = "Admin")]
+=======
+>>>>>>> 64ea2d4 (2)
         public async Task<ActionResult<DoctorDto>> LinkDoctorToUser(int doctorId, int userId)
         {
             // Check if user exists and has Doctor role

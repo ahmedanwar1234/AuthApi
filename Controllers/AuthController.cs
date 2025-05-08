@@ -106,14 +106,35 @@ namespace UserAccountAPI.Controllers
 
         // Other endpoints (logout, forgot-password, etc.) remain unchanged
         [HttpPost("logout")]
+<<<<<<< HEAD
         public async Task<IActionResult> Logout([FromBody] LogoutDTO model)
         {
             if (string.IsNullOrEmpty(model.AccessToken))
+=======
+        public async Task<IActionResult> Logout()
+        {
+            // استخراج الـ token من Authorization header
+            string authorizationHeader = Request.Headers["Authorization"].ToString();
+            if (string.IsNullOrEmpty(authorizationHeader) || !authorizationHeader.StartsWith("Bearer "))
+>>>>>>> 64ea2d4 (2)
             {
                 return BadRequest(new { message = "Access token is required." });
             }
 
+<<<<<<< HEAD
             await _authService.LogoutAsync(model.AccessToken);
+=======
+            // استخراج الـ token نفسه (إزالة كلمة Bearer)
+            string accessToken = authorizationHeader.Substring("Bearer ".Length).Trim();
+
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest(new { message = "Invalid access token." });
+            }
+
+            // استدعاء خدمة الـ logout
+            await _authService.LogoutAsync(accessToken);
+>>>>>>> 64ea2d4 (2)
 
             return Ok(new { message = "Logged out successfully." });
         }

@@ -82,6 +82,16 @@ namespace UserAccountAPI.Repositories
             await _context.SaveChangesAsync();
             return doctor;
         }
+<<<<<<< HEAD
+=======
+        public async Task<IEnumerable<Doctor>> SearchDoctors(string query)
+        {
+            return await _context.Doctors
+                .Where(d => d.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                            d.Specialty.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToListAsync();
+        }
+>>>>>>> 64ea2d4 (2)
 
         public async Task<bool> DeleteDoctor(int id)
         {

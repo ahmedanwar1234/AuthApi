@@ -45,10 +45,14 @@ namespace UserAccountAPI.DTOs
 
         public bool RememberMe { get; set; }
     }
+<<<<<<< HEAD
     public class LogoutDTO
     {
         public string AccessToken { get; set; }
     }
+=======
+  
+>>>>>>> 64ea2d4 (2)
     public class ForgotPasswordDTO
     {
         [Required]
